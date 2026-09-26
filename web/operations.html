@@ -27,6 +27,7 @@ pre { background: #0d1218; padding: 12px; border-radius: 6px; overflow: auto; fo
     <input id="sulfur" value="6" size="5">
     <input id="pressure" value="1500" size="6">
     <input id="methane" value="97" size="5">
+    <input id="walltemp" value="36" size="5">
   </div>
   <div id="actions"></div>
   <pre id="output">ready</pre>
@@ -41,6 +42,8 @@ const commands = [
   ['/api/feed/start', {}],
   ['/api/feed/close', {}],
   ['/api/heater/ramp', {target_c: 36}],
+  ['/api/heater/wall', null, 'wall'],
+  ['/api/heater/cool', {}],
   ['/api/desul/check', null, 'sulfur'],
   ['/api/compress/start', {}],
   ['/api/mem/valve', {}],
@@ -55,6 +58,8 @@ const labels = {
   '/api/feed/start': 'open gate',
   '/api/feed/close': 'close gate',
   '/api/heater/ramp': 'heat ramp',
+  '/api/heater/wall': 'read wall temp',
+  '/api/heater/cool': 'cool',
   '/api/desul/check': 'verify outlet',
   '/api/compress/start': 'start compressor',
   '/api/mem/valve': 'open valve',
@@ -70,6 +75,7 @@ function payloadFor(entry) {
     quantity: Number(document.getElementById('quantity').value)
   };
   if (source === 'sulfur') return {sulfur_ppm: Number(document.getElementById('sulfur').value)};
+  if (source === 'wall') return {temperature_c: Number(document.getElementById('walltemp').value)};
   return {};
 }
 const bar = document.getElementById('actions');

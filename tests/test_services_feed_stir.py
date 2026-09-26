@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from bgs.errors import BelowLimitError, InterlockBlockedError, NotDurableError, OrderViolationError, OverLimitError
+from bgs.errors import BelowLimitError, InterlockBlockedError, NotFoundError, NotDurableError, OrderViolationError, OverLimitError
 
 
 def test_batch_declared_before_the_mix_is_durable_is_rejected_as_not_durable(runtime):
@@ -108,6 +108,79 @@ def test_heat_cool_ends_an_active_ramp(runtime):
     runtime.dispatch("heat.cool", {})
 
     assert runtime.state()["subsystems"]["heat"]["ramping"] is False
+
+
+def test_heat_status_reports_the_target_band_and_bound(runtime):
+    runtime.dispatch("stir.start", {})
+    runtime.dispatch("heat.ramp", {"target_c": 36.0})
+
+    heat = runtime.state()["subsystems"]["heat"]
+
+    assert heat["ramping"] is True
+    assert heat["target_c"] == 36.0
+    assert heat["band_c"] == 1.5
+    assert heat["limit_c"] == 42.0
+    assert heat["wall"] is None
+
+
+def test_heat_ramp_target_at_the_wall_bound_is_accepted(runtime):
+    runtime.dispatch("stir.start", {})
+
+    runtime.dispatch("heat.ramp", {"target_c": 42.0})
+
+    assert runtime.state()["subsystems"]["heat"]["ramping"] is True
+
+
+def test_wall_reading_below_the_target_raises_an_alarm(runtime):
+    runtime.dispatch("stir.start", {})
+    runtime.dispatch("heat.ramp", {"target_c": 36.0})
+
+    result = runtime.dispatch("heat.wall", {"temperature_c": 30.0})
+
+    wall = result["result"]["wall"]
+    assert wall["ok"] is False
+    assert wall["code"] == "below_target"
+    assert wall["target_c"] == 36.0
+    alarm = runtime.alarms.recent()[-1]
+    assert alarm["name"] == "heat.wall.below_target"
+
+
+def test_wall_reading_on_target_is_ok(runtime):
+    runtime.dispatch("stir.start", {})
+    runtime.dispatch("heat.ramp", {"target_c": 36.0})
+
+    result = runtime.dispatch("heat.wall", {"temperature_c": 36.0})
+
+    assert result["result"]["wall"]["ok"] is True
+    assert result["result"]["wall"]["code"] == "ok"
+    assert runtime.alarms.count() == 0
+
+
+def test_wall_reading_is_visible_in_the_heat_status(runtime):
+    runtime.dispatch("stir.start", {})
+    runtime.dispatch("heat.ramp", {"target_c": 36.0})
+    runtime.dispatch("heat.wall", {"temperature_c": 35.5})
+
+    heat = runtime.state()["subsystems"]["heat"]
+
+    assert heat["wall"]["temperature_c"] == 35.5
+    assert heat["wall"]["target_c"] == 36.0
+
+
+def test_wall_reading_without_an_active_ramp_is_rejected(runtime):
+    runtime.dispatch("stir.start", {})
+
+    with pytest.raises(NotFoundError):
+        runtime.dispatch("heat.wall", {"temperature_c": 30.0})
+
+
+def test_wall_reading_after_cooling_is_rejected(runtime):
+    runtime.dispatch("stir.start", {})
+    runtime.dispatch("heat.ramp", {"target_c": 36.0})
+    runtime.dispatch("heat.cool", {})
+
+    with pytest.raises(NotFoundError):
+        runtime.dispatch("heat.wall", {"temperature_c": 30.0})
 
 
 def test_stopping_the_mixer_while_the_gate_is_open_is_blocked(runtime):

@@ -34,6 +34,10 @@ pre { background: #0d1218; padding: 12px; border-radius: 6px; overflow: auto; fo
   <table id="subsystems"><tbody></tbody></table>
 </section>
 <section>
+  <h2>Heater wall temperature</h2>
+  <table id="heater"><tbody></tbody></table>
+</section>
+<section>
   <h2>Alarms</h2>
   <table id="alarms"><tbody></tbody></table>
 </section>
@@ -60,6 +64,7 @@ function render(state) {
     row.innerHTML = `<td>${name}</td><td><code>${JSON.stringify(state.subsystems[name])}</code></td>`;
     body.appendChild(row);
   });
+  renderHeater(state.subsystems.heat || {});
   const alarms = document.querySelector('#alarms tbody');
   alarms.innerHTML = '';
   (state.alarms || []).forEach((alarm) => {
@@ -68,6 +73,20 @@ function render(state) {
     alarms.appendChild(row);
   });
   document.querySelector('#watermark').textContent = JSON.stringify(state.watermark, null, 2);
+}
+function renderHeater(heat) {
+  const body = document.querySelector('#heater tbody');
+  body.innerHTML = '';
+  const wall = heat.wall;
+  const wallText = wall ? `${wall.temperature_c} °C` : '— no reading —';
+  const wallClass = wall && wall.ok ? 'ok' : (wall ? 'bad' : 'warn');
+  const rampText = heat.ramping
+    ? `ramping to ${heat.target_c} °C (band ±${heat.band_c} °C)`
+    : 'idle';
+  const verdict = wall ? wall.code : 'none';
+  const row = document.createElement('tr');
+  row.innerHTML = `<td>wall</td><td class="${wallClass}">${wallText}</td><td>${rampText}</td><td>limit ${heat.limit_c} °C</td><td>${verdict}</td>`;
+  body.appendChild(row);
 }
 render(JSON.parse(document.getElementById('bootstrap').textContent));
 document.getElementById('refresh').addEventListener('click', function () {

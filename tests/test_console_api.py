@@ -199,3 +199,27 @@ def test_digester_pressure_endpoint_reports_the_bound(console):
     assert status == 409
     assert payload["code"] == "over_limit"
     assert payload["context"]["limit"] == 18.0
+
+
+def test_heater_wall_endpoint_reports_a_low_reading(console):
+    assert console.post("/api/stir/start")[0] == 200
+    assert console.post("/api/heater/ramp", {"target_c": 36.0})[0] == 200
+
+    status, payload = console.post("/api/heater/wall", {"temperature_c": 30.0})
+
+    assert status == 200
+    wall = payload["result"]["wall"]
+    assert wall["code"] == "below_target"
+    assert wall["temperature_c"] == 30.0
+
+    status, state = console.get("/api/state")
+    assert state["subsystems"]["heat"]["wall"]["temperature_c"] == 30.0
+
+
+def test_heater_cool_endpoint_is_blocked_without_a_ramp(console):
+    assert console.post("/api/stir/start")[0] == 200
+
+    status, payload = console.post("/api/heater/cool")
+
+    assert status == 409
+    assert payload["code"] == "interlock_blocked"

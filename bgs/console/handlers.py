@@ -20,6 +20,7 @@ COMMAND_ROUTES: tuple[tuple[str, str, str], ...] = (
     ("POST", "/api/feed/close", "feed.close"),
     ("POST", "/api/heater/ramp", "heat.ramp"),
     ("POST", "/api/heater/cool", "heat.cool"),
+    ("POST", "/api/heater/wall", "heat.wall"),
     ("POST", "/api/digester/pressure", "digester.pressure"),
     ("POST", "/api/digester/zone", "digester.zone"),
     ("POST", "/api/digester/sensor", "digester.sensor"),

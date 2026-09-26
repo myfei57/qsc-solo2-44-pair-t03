@@ -21,10 +21,20 @@ class RampPlan:
 
 
 def plan_ramp(target_c: float, limits: Limits, *, band_c: float = 1.5) -> RampPlan:
-    """Validate a ramp target against the wall temperature bound."""
+    """Validate a ramp target against the wall temperature bound.
+
+    The wall never overshoots its setpoint, so a target inside the bound
+    cannot push the measured wall temperature past it either.
+    """
 
     if band_c <= 0:
         raise ValidationError("ramp band must be positive", band_c=band_c)
+    if target_c > limits.wall_temp_max_c:
+        raise OverLimitError(
+            "ramp target is above the wall temperature bound",
+            target_c=target_c,
+            limit=limits.wall_temp_max_c,
+        )
     return RampPlan(target_c=target_c, band_c=band_c)
 
 

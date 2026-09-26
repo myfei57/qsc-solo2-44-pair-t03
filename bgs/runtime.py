@@ -377,6 +377,7 @@ class LineControlRuntime:
             "feed.close": lambda payload: self.feed.close(),
             "heat.ramp": lambda payload: self.heat.ramp(_number(payload, "target_c")),
             "heat.cool": lambda payload: self.heat.cool(),
+            "heat.wall": lambda payload: self.heat.read_wall(_number(payload, "temperature_c")),
             "digester.pressure": lambda payload: self.digester.observe_pressure(_number(payload, "kpa")),
             "digester.zone": lambda payload: self.digester.set_zone(
                 _text(payload, "zone"), _number(payload, "temperature_c")
