@@ -15,9 +15,10 @@ class RampPlan:
 
     target_c: float
     band_c: float
+    wall_c: float
 
     def describe(self) -> dict[str, Any]:
-        return {"target_c": self.target_c, "band_c": self.band_c}
+        return {"target_c": self.target_c, "band_c": self.band_c, "wall_c": self.wall_c}
 
 
 def plan_ramp(target_c: float, limits: Limits, *, band_c: float = 1.5) -> RampPlan:
@@ -25,7 +26,17 @@ def plan_ramp(target_c: float, limits: Limits, *, band_c: float = 1.5) -> RampPl
 
     if band_c <= 0:
         raise ValidationError("ramp band must be positive", band_c=band_c)
-    return RampPlan(target_c=target_c, band_c=band_c)
+    if target_c <= 0:
+        raise ValidationError("ramp target must be positive", target_c=target_c)
+    wall_c = wall_temperature(target_c)
+    if wall_c > limits.wall_temp_max_c:
+        raise OverLimitError(
+            "ramp settles above the wall temperature bound",
+            target_c=target_c,
+            wall_c=wall_c,
+            limit=limits.wall_temp_max_c,
+        )
+    return RampPlan(target_c=target_c, band_c=band_c, wall_c=wall_c)
 
 
 def wall_temperature(target_c: float, *, efficiency: float = 0.92) -> float:

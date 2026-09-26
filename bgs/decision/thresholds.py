@@ -77,6 +77,7 @@ class ThresholdSet:
                     "membrane_pressure", "kPa", maximum=limits.membrane_pressure_max_kpa
                 ),
                 "storage_pressure": Threshold("storage_pressure", "kPa", maximum=limits.storage_pressure_max_kpa),
+                "wall_temp": Threshold("wall_temp", "°C", maximum=limits.wall_temp_max_c),
                 "wall_temp": Threshold("wall_temp", "C", maximum=limits.wall_temp_max_c),
                 "mix_level": Threshold("mix_level", "ratio", minimum=limits.mix_level_min),
             }
